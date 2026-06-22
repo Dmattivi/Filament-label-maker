@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filament Label Maker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 28px 16px; }
+    h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: .05em; margin-bottom: 24px; color: #a78bfa; }
+    .container { display: flex; flex-direction: row; gap: 32px; align-items: flex-start; width: 100%; max-width: 1200px; }
+    .controls { background: #16213e; border: 1px solid #2d2d5e; border-radius: 16px; padding: 24px; width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 15px; }
+    .section-title { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #555; }
+    hr { border: none; border-top: 1px solid #2d2d5e; }
+    .field label { display: block; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #a78bfa; margin-bottom: 6px; }
+    .field input[type="text"] { width: 100%; background: #0f3460; border: 1px solid #2d2d5e; border-radius: 8px; padding: 9px 13px; color: #fff; font-size: .92rem; outline: none; transition: border-color .2s; }
+    .field input[type="text"]:focus { border-color: #a78bfa; }
+    .logo-upload { border: 2px dashed #2d2d5e; border-radius: 10px; padding: 13px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; position: relative; }
+    .logo-upload:hover { border-color: #a78bfa; background: #1a1a40; }
+    .logo-upload input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .logo-upload .upload-icon { font-size: 1.4rem; }
+    .logo-upload p { font-size: .7rem; color: #888; margin-top: 3px; }
+    .logo-preview-thumb { max-width: 56px; max-height: 36px; object-fit: contain; border-radius: 3px; display: none; margin: 0 auto 3px; }
+    .color-row { display: flex; align-items: center; gap: 8px; }
+    .color-row input[type="text"] { flex: 1; }
+    input[type="color"] { width: 36px; height: 36px; border: none; border-radius: 8px; cursor: pointer; padding: 2px; background: #0f3460; flex-shrink: 0; }
+    .slider-row { display: flex; align-items: center; gap: 8px; }
+    .slider-row input[type="range"] { flex: 1; accent-color: #a78bfa; }
+    .slider-val { font-size: .76rem; color: #888; width: 28px; text-align: right; }
+    .toggle-row { display: flex; align-items: center; gap: 8px; }
+    .toggle-row label { font-size: .82rem; color: #ccc; cursor: pointer; }
+    .toggle-row input[type="checkbox"] { width: 15px; height: 15px; accent-color: #a78bfa; cursor: pointer; }
+    .qty-row { display: flex; align-items: center; gap: 10px; }
+    .qty-row label { font-size: .82rem; color: #888; }
+    .qty-row input[type="number"] { width: 52px; background: #0f3460; border: 1px solid #2d2d5e; border-radius: 8px; padding: 6px 9px; color: #fff; font-size: .88rem; outline: none; }
+    .btn-download { background: #7c3aed; color: #fff; border: none; border-radius: 10px; padding: 11px; font-size: .92rem; font-weight: 600; cursor: pointer; width: 100%; transition: background .2s, transform .1s; }
+    .btn-download:hover { background: #6d28d9; }
+    .btn-download:active { transform: scale(.98); }
+    .btn-clear { background: transparent; color: #888; border: 1px solid #2d2d5e; border-radius: 10px; padding: 7px; font-size: .8rem; cursor: pointer; width: 100%; transition: color .2s, border-color .2s; }
+    .btn-clear:hover { color: #e0e0e0; border-color: #888; }
+    .preview-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    .preview-panel h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: #888; }
+    .label-scale-wrapper {
+      border-radius: 12px; padding: 20px; width: 100%;
+      display: flex; justify-content: center; align-items: center;
+      background-color: #2a2a2a;
+      background-image: linear-gradient(45deg,#3a3a3a 25%,transparent 25%),
+                        linear-gradient(-45deg,#3a3a3a 25%,transparent 25%),
+                        linear-gradient(45deg,transparent 75%,#3a3a3a 75%),
+                        linear-gradient(-45deg,transparent 75%,#3a3a3a 75%);
+      background-size: 20px 20px;
+      background-position: 0 0,0 10px,10px -10px,-10px 0;
+    }
+    #labelCanvas { border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,.6); display: block; max-width: 100%; height: auto; }
+    .size-note { font-size: .7rem; color: #555; }
+  </style>
+</head>
+<body>
+
+<h1>🎨 Filament Label Maker</h1>
+
+<div class="container">
+  <div class="controls">
+    <div class="section-title">Content</div>
+
+    <div class="field">
+      <label>Logo</label>
+      <div class="logo-upload" id="logoUploadArea">
+        <input type="file" id="logoInput" accept="image/*">
+        <img id="logoThumb" class="logo-preview-thumb" alt="">
+        <div class="upload-icon">🖼️</div>
+        <p id="uploadHint">Click or drop image</p>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Filament Type</label>
+      <input type="text" id="filamentType" placeholder="e.g. PLA Prusament" maxlength="30">
+    </div>
+
+    <div class="field">
+      <label>Color</label>
+      <div class="color-row">
+        <input type="text" id="colorName" placeholder="e.g. Galaxy Black" maxlength="30">
+        <input type="color" id="colorPicker" value="#ffffff" title="Accent color for color text only">
+      </div>
+    </div>
+
+    <hr>
+    <div class="section-title">Appearance</div>
+
+    <div class="field">
+      <label>Filament type size <span class="slider-val" id="typeSize">28</span>pt</label>
+      <div class="slider-row"><input type="range" id="typeSizeSlider" min="12" max="60" value="28"></div>
+    </div>
+
+    <div class="field">
+      <label>Color text size <span class="slider-val" id="colorSize">22</span>pt</label>
+      <div class="slider-row"><input type="range" id="colorSizeSlider" min="10" max="50" value="22"></div>
+    </div>
+
+    <hr>
+    <div class="section-title">Weight scale</div>
+
+    <div class="field">
+      <label>Max weight (g)</label>
+      <div class="color-row">
+        <input type="text" id="maxWeight" value="1000" maxlength="6" style="max-width:76px">
+        <span style="color:#666;font-size:.78rem">step</span>
+        <input type="text" id="scaleStep" value="200" maxlength="5" style="max-width:64px">
+        <span style="color:#888;font-size:.78rem">g</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Current weight — <span id="curWeightVal">1000g</span></label>
+      <div class="slider-row"><input type="range" id="curWeightSlider" min="0" max="1000" value="1000" step="10"></div>
+      <div class="toggle-row" style="margin-top:8px">
+        <input type="checkbox" id="showMarker" checked>
+        <label for="showMarker">Show marker</label>
+      </div>
+    </div>
+
+    <hr>
+    <div class="qty-row">
+      <label>Copies:</label>
+      <input type="number" id="qty" value="1" min="1" max="20">
+    </div>
+    <button class="btn-download" id="downloadBtn">⬇ Download PNG</button>
+    <button class="btn-clear" id="clearBtn">Clear logo</button>
+  </div>
+
+  <div class="preview-panel">
+    <h2>Live Preview (checkerboard = transparent)</h2>
+    <div class="label-scale-wrapper">
+      <canvas id="labelCanvas"></canvas>
+    </div>
+    <div class="size-note">2225 × 707 px · transparent background</div>
+  </div>
+</div>
+
+<script>
+  const W = 2225, H = 707;
+  const canvas = document.getElementById('labelCanvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = W;
+  canvas.height = H;
+
+  function sizePreview() {
+    const maxW = canvas.parentElement.clientWidth - 40;
+    canvas.style.width  = maxW + 'px';
+    canvas.style.height = Math.round(maxW * H / W) + 'px';
+  }
+  sizePreview();
+  window.addEventListener('resize', sizePreview);
+
+  let logoImg = null;
+  const MM = H / 25;
+  function pt(n) { return n * MM / 2.835; }
+
+  function drawLabel() {
+    const filament  = document.getElementById('filamentType').value.trim() || 'PLA';
+    const colorName = document.getElementById('colorName').value.trim()    || 'Color';
+    const accent    = document.getElementById('colorPicker').value;
+    const typeSize  = +document.getElementById('typeSizeSlider').value;
+    const colorSize = +document.getElementById('colorSizeSlider').value;
+    const maxG      = Math.max(100, +document.getElementById('maxWeight').value || 1000);
+    const stepG     = Math.max(50,  +document.getElementById('scaleStep').value  || 200);
+    const curG      = Math.min(+document.getElementById('curWeightSlider').value, maxG);
+    const showMark  = document.getElementById('showMarker').checked;
+
+    // Transparent background
+    ctx.clearRect(0, 0, W, H);
+
+    const FG = '#ffffff';  // white for all structural elements
+
+    const pad       = Math.round(H * 0.07);   // 49 px
+    const logoZoneW = 400 + pad * 2;          // drawable logo = 400 px wide  → 498 px
+    const scaleH    = H - (400 + pad * 2);    // drawable logo = 400 px tall  → 209 px
+    const mainH     = H - scaleH;             // 498 px
+
+    // ── Logo ─────────────────────────────────────────────────
+    if (logoImg) {
+      const ratio = Math.min(400 / logoImg.naturalWidth, 400 / logoImg.naturalHeight);
+      const lw = logoImg.naturalWidth  * ratio;
+      const lh = logoImg.naturalHeight * ratio;
+      ctx.drawImage(logoImg, pad + (400 - lw) / 2, pad + (400 - lh) / 2, lw, lh);
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(pad, pad, 400, 400);
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = `${pt(7)}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('LOGO', pad + 200, pad + 200);
+    }
+
+    // ── Vertical divider ─────────────────────────────────────
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth   = Math.max(1, Math.round(W * 0.003));
+    ctx.beginPath();
+    ctx.moveTo(logoZoneW, pad);
+    ctx.lineTo(logoZoneW, mainH - pad);
+    ctx.stroke();
+
+    // ── Text zone ────────────────────────────────────────────
+    const textX = logoZoneW + pad;
+    const textW = W - textX - pad;
+    const midY  = Math.round(mainH / 2);
+
+    // Horizontal divider line — always white
+    ctx.strokeStyle = FG;
+    ctx.lineWidth   = Math.max(3, Math.round(H * 0.022));
+    ctx.beginPath();
+    ctx.moveTo(textX, midY);
+    ctx.lineTo(W - pad, midY);
+    ctx.stroke();
+
+    // Filament type — above line, white
+    ctx.fillStyle    = FG;
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'middle';
+    let fs = pt(typeSize);
+    ctx.font = `bold ${fs}px system-ui, sans-serif`;
+    while (ctx.measureText(filament).width > textW - pad && fs > pt(8)) {
+      fs -= 1; ctx.font = `bold ${fs}px system-ui, sans-serif`;
+    }
+    ctx.fillText(filament, textX, mainH * 0.27);
+
+    // Color name — below line, accent color
+    ctx.fillStyle = accent;
+    let cs = pt(colorSize);
+    ctx.font = `bold ${cs}px system-ui, sans-serif`;
+    while (ctx.measureText(colorName).width > textW - pad && cs > pt(7)) {
+      cs -= 1; ctx.font = `bold ${cs}px system-ui, sans-serif`;
+    }
+    ctx.fillText(colorName, textX, midY + (mainH - midY) * 0.52);
+
+    // ── Weight scale (bottom) ─────────────────────────────────
+    const rulerY   = mainH + Math.round(scaleH * 0.42);
+    const scaleX0  = pad, scaleX1 = W - pad;
+    const scaleLen = scaleX1 - scaleX0;
+    const rulerLW  = Math.max(2, Math.round(H * 0.013));
+    const tickH    = Math.round(scaleH * 0.28);
+
+    // Ruler baseline — white
+    ctx.strokeStyle = FG;
+    ctx.lineWidth   = rulerLW;
+    ctx.beginPath();
+    ctx.moveTo(scaleX0, rulerY);
+    ctx.lineTo(scaleX1, rulerY);
+    ctx.stroke();
+
+    // Ticks & labels — white
+    ctx.font         = `bold ${pt(6.5)}px system-ui, sans-serif`;
+    ctx.textBaseline = 'top';
+    ctx.fillStyle    = FG;
+
+    for (let g = 0; g <= maxG; g += stepG) {
+      const x = scaleX0 + (g / maxG) * scaleLen;
+      ctx.strokeStyle = FG;
+      ctx.lineWidth   = rulerLW;
+      ctx.beginPath();
+      ctx.moveTo(x, rulerY - tickH / 2);
+      ctx.lineTo(x, rulerY + tickH / 2);
+      ctx.stroke();
+      const label = g === 0 ? '0g' : (g >= 1000 ? (g/1000)+'kg' : g+'g');
+      ctx.textAlign = g === 0 ? 'left' : g === maxG ? 'right' : 'center';
+      ctx.fillText(label, x, rulerY + tickH / 2 + Math.round(scaleH * 0.08));
+    }
+
+    // Weight marker — accent color
+    if (showMark) {
+      const mx = scaleX0 + (curG / maxG) * scaleLen;
+      const mh = Math.round(scaleH * 0.72);
+      const mw = Math.max(4, Math.round(scaleLen * 0.018));
+      ctx.fillStyle = accent;
+      ctx.fillRect(mx - mw / 2, rulerY - mh, mw, mh);
+      const ts = mw * 1.6;
+      ctx.beginPath();
+      ctx.moveTo(mx - ts/2, rulerY - mh);
+      ctx.lineTo(mx + ts/2, rulerY - mh);
+      ctx.lineTo(mx, rulerY - mh + ts * 0.7);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // ── Logo handling ─────────────────────────────────────────────
+  function loadLogoFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        logoImg = img;
+        const thumb = document.getElementById('logoThumb');
+        thumb.src = ev.target.result; thumb.style.display = 'block';
+        document.getElementById('uploadHint').textContent = file.name;
+        drawLabel();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  document.getElementById('logoInput').addEventListener('change', e => loadLogoFile(e.target.files[0]));
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    logoImg = null; document.getElementById('logoInput').value = '';
+    const thumb = document.getElementById('logoThumb');
+    thumb.style.display = 'none'; thumb.src = '';
+    document.getElementById('uploadHint').textContent = 'Click or drop image';
+    drawLabel();
+  });
+
+  const area = document.getElementById('logoUploadArea');
+  area.addEventListener('dragover', e => { e.preventDefault(); area.style.borderColor = '#a78bfa'; });
+  area.addEventListener('dragleave', () => { area.style.borderColor = ''; });
+  area.addEventListener('drop', e => { e.preventDefault(); area.style.borderColor = ''; loadLogoFile(e.dataTransfer.files[0]); });
+
+  ['filamentType','colorName','colorPicker','showMarker','maxWeight','scaleStep'].forEach(id =>
+    document.getElementById(id).addEventListener('input', drawLabel));
+  document.getElementById('typeSizeSlider').addEventListener('input', e => {
+    document.getElementById('typeSize').textContent = e.target.value; drawLabel(); });
+  document.getElementById('colorSizeSlider').addEventListener('input', e => {
+    document.getElementById('colorSize').textContent = e.target.value; drawLabel(); });
+  document.getElementById('curWeightSlider').addEventListener('input', e => {
+    document.getElementById('curWeightVal').textContent = e.target.value + 'g'; drawLabel(); });
+  document.getElementById('maxWeight').addEventListener('input', e => {
+    document.getElementById('curWeightSlider').max = Math.max(100, +e.target.value || 1000); drawLabel(); });
+
+  document.getElementById('downloadBtn').addEventListener('click', () => {
+    const qty   = Math.max(1, Math.min(20, +document.getElementById('qty').value || 1));
+    const type  = (document.getElementById('filamentType').value.trim() || 'label').replace(/\s+/g,'_');
+    const color = (document.getElementById('colorName').value.trim()    || 'color').replace(/\s+/g,'_');
+    if (qty === 1) { dl(canvas, `${type}_${color}.png`); return; }
+    const sheet = document.createElement('canvas');
+    sheet.width = W; sheet.height = H * qty;
+    const sc = sheet.getContext('2d');
+    for (let i = 0; i < qty; i++) sc.drawImage(canvas, 0, H * i);
+    dl(sheet, `${type}_${color}_x${qty}.png`);
+  });
+
+  function dl(cvs, name) {
+    cvs.toBlob(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    }, 'image/png');
+  }
+
+  drawLabel();
+</script>
+</body>
+</html>
